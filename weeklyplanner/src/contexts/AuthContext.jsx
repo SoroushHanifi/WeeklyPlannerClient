@@ -1,26 +1,35 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authAPI, saveCookieToken, deleteCookieToken, hasToken } from '../api/client';
+import { authAPI, deleteCookieToken } from '../api/client';
 
 const AuthContext = createContext(null);
 
-function extractToken(data) {
-  if (!data) return null;
-  const fields = ['token', 'accessToken', 'access_token', 'jwt', 'jwtToken', 'bearerToken', 'authToken', 'idToken', 'id_token'];
-  for (const f of fields) {
-    if (data[f] && typeof data[f] === 'string') return data[f];
-  }
-  if (data.data && typeof data.data === 'object') return extractToken(data.data);
-  if (data.result && typeof data.result === 'object') return extractToken(data.result);
-  return null;
-}
+/**
+ * Backend response structure: { success, message, data: { userId, username, fullName, lang } }
+ * این تابع کاربر رو از هر ساختاری که API برگردونه استخراج می‌کنه
+ */
+function extractUser(apiResponseData) {
+  if (!apiResponseData) return null;
 
-function extractUser(data) {
-  if (!data) return null;
-  const userFields = ['user', 'userData', 'userInfo', 'account', 'profile'];
-  for (const f of userFields) {
-    if (data[f] && typeof data[f] === 'object') return data[f];
+  // ساختار مستقیم: { userId, username, ... }
+  if (apiResponseData.userId || apiResponseData.username || apiResponseData.id) {
+    return apiResponseData;
   }
-  if (data.id || data.username || data.email || data.userId) return data;
+
+  // ساختار wrapper: { success, message, data: { userId, username, ... } }
+  const nested = apiResponseData.data;
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    if (nested.userId || nested.username || nested.id) {
+      return nested;
+    }
+  }
+
+  // فیلدهای احتمالی دیگه
+  for (const field of ['user', 'userData', 'userInfo', 'account', 'profile']) {
+    if (apiResponseData[field] && typeof apiResponseData[field] === 'object') {
+      return apiResponseData[field];
+    }
+  }
+
   return null;
 }
 
@@ -28,15 +37,21 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * همیشه سعی می‌کنیم /me رو صدا بزنیم — اگه کوکی backend معتبر باشه کار می‌کنه،
+   * اگه نباشه 401 می‌گیریم و user رو null می‌ذاریم.
+   * نیازی نیست hasToken() چک کنیم چون کوکی HttpOnly هست و JS نمی‌تونه بخوندش.
+   */
   const fetchMe = useCallback(async () => {
     try {
       const res = await authAPI.me();
-      if (res.data) {
-        const u = extractUser(res.data) || res.data;
+      const u = extractUser(res.data);
+      if (u) {
         setUser(u);
         return u;
       }
-    } catch {
+      setUser(null);
+    } catch (error) {
       if (error.response?.status === 401) {
         deleteCookieToken();
       }
@@ -48,66 +63,30 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!hasToken()) {
-      setLoading(false);
-      return;
-    }
-
+    // همیشه بررسی می‌کنیم — backend کوکی HttpOnly مدیریت می‌کنه
     fetchMe();
   }, [fetchMe]);
 
-    const login = async (username, password) => {
+  const login = async (username, password) => {
     const res = await authAPI.login({ username, password });
-    console.log('[Auth] Login response:', JSON.stringify(res.data));
 
-    const token = extractToken(res.data);
-    if (token) {
-      console.log('[Auth] Token found, saving...');
-      saveCookieToken(token);
-    }
+    // بعد از لاگین موفق، اطلاعات کاربر رو از /me می‌گیریم
+    // چون backend توکن رو در HttpOnly Cookie ذخیره کرده و حالا معتبره
+    await fetchMe();
 
-    const userFromLogin = extractUser(res.data);
-
-    try {
-      const meRes = await authAPI.me();
-      const u = extractUser(meRes.data) || meRes.data;
-      console.log("SET USER:", u);
-      if (u && (u.id || u.username || u.email)) {
-        setUser(u);
-        setLoading(false);
-        return res.data;
-      }
-    } catch (e) {
-      console.log('[Auth] /me failed:', e.message);
-    }
-
-    if (userFromLogin) {
-      setUser(userFromLogin);
-    } else if (token) {
-      setUser({ username, loggedIn: true });
-    }
-    setLoading(false);
     return res.data;
   };
 
   const register = async (data) => {
     const res = await authAPI.register(data);
-    const token = extractToken(res.data);
-    if (token) saveCookieToken(token);
-    try {
-      const meRes = await authAPI.me();
-      const u = extractUser(meRes.data) || meRes.data;
-      if (u) { setUser(u); setLoading(false); return res.data; }
-    } catch {}
-    const u = extractUser(res.data);
-    if (u) setUser(u);
-    else if (token) setUser({ username: data.username, loggedIn: true });
-    setLoading(false);
+    await fetchMe();
     return res.data;
   };
 
   const logout = async () => {
-    try { await authAPI.logout(); } catch {}
+    try {
+      await authAPI.logout();
+    } catch {}
     deleteCookieToken();
     setUser(null);
   };

@@ -107,7 +107,7 @@ export default function TimeBlocksView({ weekId, blocks, days, categories, onRef
               if (!block) return <div key={`e-${day.id}-${hour}`} className={styles.cellEmpty} />
 
               const isEdit = editing?.id === block.timeBlockId
-              const accent = PRIORITY_COLOR[block.priority] ?? PRIORITY_COLOR[2]
+              const accent = block.displayColor
               const filled = !isDefaultTitle(block.activityTitle)
               const cat = (categories || []).find(c => (c.id ?? c.categoryId) === block.categoryId)
 
