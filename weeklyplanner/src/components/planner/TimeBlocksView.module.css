@@ -1,0 +1,266 @@
+/* ── Scroll container ── */
+.outer {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+/* ── CSS Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: 56px repeat(var(--cols, 7), minmax(110px, 1fr));
+  min-width: 860px;
+}
+
+/* ── Corner (top-left) ── */
+.corner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+}
+
+/* ── Day header ── */
+.dayHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-secondary);
+  text-align: center;
+  padding: 10px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  letter-spacing: 0.5px;
+}
+
+/* ── Hour label ── */
+.hourLbl {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--bg-secondary);
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+}
+
+/* ── Cell base ── */
+.cell, .cellEmpty {
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.cellEmpty {
+  background: transparent;
+}
+
+/* ── Unfilled (default title) ── */
+.unfilled {
+  background: transparent;
+  border-right: 2px solid transparent;
+  cursor: pointer;
+}
+.unfilled:hover {
+  background: rgba(255,255,255,0.03);
+}
+.unfilled:hover .hint {
+  opacity: 1;
+}
+
+/* ── Filled (has real content) ── */
+.filled {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-right: 3px solid var(--accent);
+  cursor: pointer;
+}
+.filled:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* ── Completed ── */
+.done .title {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.done {
+  opacity: 0.7;
+}
+
+/* ── Normal view ── */
+.view {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 6px;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.check {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.viewText {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.catTag {
+  font-size: 9px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-secondary);
+  align-self: flex-start;
+}
+
+.hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.editIcon {
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.view:hover .editIcon {
+  opacity: 1;
+}
+
+/* ── Edit mode ── */
+.editBox {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  margin: 3px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  z-index: 10;
+  position: relative;
+}
+
+.inp {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-primary);
+  font-family: inherit;
+  direction: rtl;
+  width: 100%;
+}
+.inp:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.editRow {
+  display: flex;
+  gap: 4px;
+}
+
+.sel {
+  flex: 1;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 6px;
+  font-size: 10px;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+}
+.sel:focus { outline: none; border-color: var(--accent); }
+
+.editBtns {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.btnSave {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--accent);
+  color: #0c0e14;
+  border: none;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btnSave:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btnCancel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btnCancel:hover { background: rgba(255,255,255,0.1); }
+
+/* scrollbar */
+.outer::-webkit-scrollbar { width: 6px; height: 6px; }
+.outer::-webkit-scrollbar-track { background: transparent; }
+.outer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
